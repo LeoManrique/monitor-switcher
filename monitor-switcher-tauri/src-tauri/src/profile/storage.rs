@@ -183,6 +183,75 @@ pub fn get_profile_details(name: &str) -> Result<Vec<MonitorDetails>, String> {
     Ok(monitors)
 }
 
+/// Get current monitor configuration from the system.
+pub fn current_monitors() -> Result<Vec<MonitorDetails>, String> {
+    use crate::ccd::{get_display_settings, get_additional_info_for_modes, MODE_INFO_TYPE_SOURCE};
+
+    let settings = get_display_settings(true)?;
+    let additional_info = get_additional_info_for_modes(&settings.mode_info_array);
+
+    let mut monitors = Vec::new();
+
+    for (path_idx, path) in settings.path_info_array.iter().enumerate() {
+        // Find the source mode for this path
+        let source_mode_idx = path.source_info.mode_info_idx as usize;
+        let mode_info = settings.mode_info_array.get(source_mode_idx);
+
+        // Get resolution and position from source mode
+        let (width, height, position_x, position_y) = if let Some(m) = mode_info {
+            if m.info_type == MODE_INFO_TYPE_SOURCE {
+                let src = m.get_source_mode();
+                (src.width, src.height, src.position.x, src.position.y)
+            } else {
+                // Fallback to target mode active size
+                let target_mode_idx = path.target_info.mode_info_idx as usize;
+                if let Some(tm) = settings.mode_info_array.get(target_mode_idx) {
+                    let tgt = tm.get_target_mode();
+                    (tgt.target_video_signal_info.active_size.cx,
+                     tgt.target_video_signal_info.active_size.cy,
+                     0, 0)
+                } else {
+                    continue;
+                }
+            }
+        } else {
+            continue;
+        };
+
+        // Get refresh rate
+        let refresh_rate = if path.target_info.refresh_rate.denominator > 0 {
+            path.target_info.refresh_rate.numerator as f64
+                / path.target_info.refresh_rate.denominator as f64
+        } else {
+            0.0
+        };
+
+        // Get monitor name from additional_info
+        let name = additional_info
+            .iter()
+            .skip(path_idx * 2)
+            .take(2)
+            .find(|info| info.valid && !info.monitor_friendly_device.is_empty())
+            .map(|info| info.monitor_friendly_device.clone())
+            .unwrap_or_else(|| format!("Display {}", path_idx + 1));
+
+        let is_primary = position_x == 0 && position_y == 0;
+
+        monitors.push(MonitorDetails {
+            name,
+            width,
+            height,
+            refresh_rate,
+            position_x,
+            position_y,
+            rotation: path.target_info.rotation,
+            is_primary,
+        });
+    }
+
+    Ok(monitors)
+}
+
 /// Sanitize a filename by removing invalid characters.
 fn sanitize_filename(name: &str) -> String {
     let invalid_chars = ['\\', '/', ':', '*', '?', '"', '<', '>', '|'];

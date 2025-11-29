@@ -130,6 +130,12 @@ async fn open_save_dialog(app: AppHandle) -> Result<(), String> {
     Ok(())
 }
 
+#[tauri::command]
+async fn get_current_monitors() -> Result<Vec<MonitorDetails>, String> {
+    use profile::current_monitors;
+    current_monitors()
+}
+
 // ============================================================================
 // Popup Window
 // ============================================================================
@@ -427,6 +433,7 @@ pub fn run() {
             profile_exists,
             turn_off_monitors,
             open_save_dialog,
+            get_current_monitors,
         ])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");

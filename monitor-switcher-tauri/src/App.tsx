@@ -8,6 +8,7 @@ import './App.css';
 function App() {
   const {
     profiles,
+    activeProfile,
     isLoading,
     error,
     loadProfile,
@@ -165,6 +166,7 @@ function App() {
           <div className="flex-1 overflow-y-auto">
             <ProfileList
               profiles={profiles}
+              activeProfile={activeProfile}
               onLoad={handleLoad}
               onDelete={handleDelete}
               isLoading={isLoading}

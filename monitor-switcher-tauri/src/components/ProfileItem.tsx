@@ -4,6 +4,7 @@ import { MonitorDiagram } from './MonitorDiagram';
 
 interface ProfileItemProps {
   profile: ProfileDetails;
+  isActive: boolean;
   onLoad: (name: string) => Promise<void>;
   onDelete: (name: string) => Promise<void>;
 }
@@ -24,7 +25,7 @@ function getMonitorSummary(profile: ProfileDetails): string {
   return `${count} monitor${count > 1 ? 's' : ''} · ${names}`;
 }
 
-export function ProfileItem({ profile, onLoad, onDelete }: ProfileItemProps) {
+export function ProfileItem({ profile, isActive, onLoad, onDelete }: ProfileItemProps) {
   const [isLoading, setIsLoading] = useState(false);
   const [isDeleting, setIsDeleting] = useState(false);
 
@@ -53,7 +54,9 @@ export function ProfileItem({ profile, onLoad, onDelete }: ProfileItemProps) {
       className={`group rounded-lg transition-all duration-200 cursor-pointer overflow-hidden border ${
         isLoading
           ? 'bg-blue-500/10 border-blue-500/30'
-          : 'bg-slate-800/40 hover:bg-slate-700/50 border-slate-700/50 hover:border-slate-600/50'
+          : isActive
+            ? 'bg-sky-500/10 border-sky-500/40 hover:bg-sky-500/15'
+            : 'bg-slate-800/40 hover:bg-slate-700/50 border-slate-700/50 hover:border-slate-600/50'
       }`}
       onClick={handleLoad}
     >

@@ -3,12 +3,13 @@ import type { ProfileDetails } from '../types';
 
 interface ProfileListProps {
   profiles: ProfileDetails[];
+  activeProfile: string | null;
   onLoad: (name: string) => Promise<void>;
   onDelete: (name: string) => Promise<void>;
   isLoading: boolean;
 }
 
-export function ProfileList({ profiles, onLoad, onDelete, isLoading }: ProfileListProps) {
+export function ProfileList({ profiles, activeProfile, onLoad, onDelete, isLoading }: ProfileListProps) {
   if (isLoading) {
     return (
       <div className="flex flex-col items-center justify-center py-8 text-slate-400">
@@ -38,6 +39,7 @@ export function ProfileList({ profiles, onLoad, onDelete, isLoading }: ProfileLi
         <ProfileItem
           key={profile.name}
           profile={profile}
+          isActive={profile.name === activeProfile}
           onLoad={onLoad}
           onDelete={onDelete}
         />
