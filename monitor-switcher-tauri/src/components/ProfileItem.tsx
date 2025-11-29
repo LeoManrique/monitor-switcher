@@ -51,7 +51,7 @@ export function ProfileItem({ profile, isActive, onLoad, onDelete }: ProfileItem
 
   return (
     <div
-      className={`group rounded-lg transition-all duration-200 cursor-pointer overflow-hidden border ${
+      className={`group rounded-lg transition-all duration-200 cursor-pointer overflow-hidden border min-w-[200px] ${
         isLoading
           ? 'bg-blue-500/10 border-blue-500/30'
           : isActive

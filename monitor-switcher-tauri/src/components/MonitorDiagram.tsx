@@ -83,78 +83,80 @@ export function MonitorDiagram({ monitors, maxHeight = 120 }: MonitorDiagramProp
   }
 
   return (
-    <div
-      className="relative mx-auto"
-      style={{ width: layout.containerWidth, height: layout.containerHeight }}
-    >
-      {layout.monitors.map((m, idx) => {
-        // Determine if box is too small for full labels
-        const isSmall = m.displayWidth < 60 || m.displayHeight < 50;
-        const isTiny = m.displayWidth < 40 || m.displayHeight < 35;
-        // Horizontal monitors (wider than tall) can show res/refresh inline
-        const isHorizontal = m.displayWidth > m.displayHeight * 1.2;
+    <div className="overflow-x-auto">
+      <div
+        className="relative mx-auto"
+        style={{ width: layout.containerWidth, height: layout.containerHeight }}
+      >
+        {layout.monitors.map((m, idx) => {
+          // Determine if box is too small for full labels
+          const isSmall = m.displayWidth < 60 || m.displayHeight < 50;
+          const isTiny = m.displayWidth < 40 || m.displayHeight < 35;
+          // Horizontal monitors (wider than tall) can show res/refresh inline
+          const isHorizontal = m.displayWidth > m.displayHeight * 1.2;
 
-        return (
-          <div
-            key={idx}
-            className="absolute rounded transition-all duration-200 flex flex-col items-center justify-center overflow-hidden
+          return (
+            <div
+              key={idx}
+              className="absolute rounded transition-all duration-200 flex flex-col items-center justify-center overflow-hidden
               border border-slate-500/40 bg-gradient-to-br from-slate-600/80 to-slate-700/80"
-            style={{
-              left: m.left,
-              top: m.top,
-              width: m.displayWidth,
-              height: m.displayHeight,
-            }}
-            title={`${m.name}\n${m.width}×${m.height} @ ${formatRefreshRate(m.refreshRate)}${m.isPrimary ? '\n(Primary)' : ''}`}
-          >
-            {!isTiny && (
-              <>
-                {/* Monitor name */}
-                <span
-                  className={`font-medium text-white truncate px-1 leading-tight ${isSmall ? 'text-[8px]' : 'text-[10px]'
-                    }`}
-                  style={{ maxWidth: m.displayWidth - 4 }}
-                >
-                  {truncateName(m.name, isSmall ? 8 : 14)}
-                </span>
-
-                {/* Resolution and refresh rate */}
-                {isHorizontal ? (
-                  <span className={`leading-tight ${isSmall ? 'text-[7px]' : 'text-[9px]'}`}>
-                    <span className="text-slate-300">{formatResolution(m.width, m.height)}</span>
-                    <span className="text-slate-500 mx-0.5">@</span>
-                    <span className="text-emerald-400">{formatRefreshRate(m.refreshRate)}</span>
-                  </span>
-                ) : (
-                  <>
-                    <span
-                      className={`text-slate-300 leading-tight ${isSmall ? 'text-[7px]' : 'text-[9px]'}`}
-                    >
-                      {formatResolution(m.width, m.height)}
-                    </span>
-                    <span
-                      className={`leading-tight text-emerald-400 ${isSmall ? 'text-[7px]' : 'text-[9px]'}`}
-                    >
-                      {formatRefreshRate(m.refreshRate)}
-                    </span>
-                  </>
-                )}
-
-                {/* Primary indicator */}
-                {m.isPrimary && (
-                  <svg
-                    className={`text-emerald-400 ${isSmall ? 'w-2 h-2 mt-0.5' : 'w-2.5 h-2.5 mt-0.5'}`}
-                    fill="currentColor"
-                    viewBox="0 0 24 24"
+              style={{
+                left: m.left,
+                top: m.top,
+                width: m.displayWidth,
+                height: m.displayHeight,
+              }}
+              title={`${m.name}\n${m.width}×${m.height} @ ${formatRefreshRate(m.refreshRate)}${m.isPrimary ? '\n(Primary)' : ''}`}
+            >
+              {!isTiny && (
+                <>
+                  {/* Monitor name */}
+                  <span
+                    className={`font-medium text-white truncate px-1 leading-tight ${isSmall ? 'text-[8px]' : 'text-[10px]'
+                      }`}
+                    style={{ maxWidth: m.displayWidth - 4 }}
                   >
-                    <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-2 15l-5-5 1.41-1.41L10 14.17l7.59-7.59L19 8l-9 9z" />
-                  </svg>
-                )}
-              </>
-            )}
-          </div>
-        );
-      })}
+                    {truncateName(m.name, isSmall ? 8 : 14)}
+                  </span>
+
+                  {/* Resolution and refresh rate */}
+                  {isHorizontal ? (
+                    <span className={`leading-tight ${isSmall ? 'text-[7px]' : 'text-[9px]'}`}>
+                      <span className="text-slate-300">{formatResolution(m.width, m.height)}</span>
+                      <span className="text-slate-500 mx-0.5">@</span>
+                      <span className="text-emerald-400">{formatRefreshRate(m.refreshRate)}</span>
+                    </span>
+                  ) : (
+                    <>
+                      <span
+                        className={`text-slate-300 leading-tight ${isSmall ? 'text-[7px]' : 'text-[9px]'}`}
+                      >
+                        {formatResolution(m.width, m.height)}
+                      </span>
+                      <span
+                        className={`leading-tight text-emerald-400 ${isSmall ? 'text-[7px]' : 'text-[9px]'}`}
+                      >
+                        {formatRefreshRate(m.refreshRate)}
+                      </span>
+                    </>
+                  )}
+
+                  {/* Primary indicator */}
+                  {m.isPrimary && (
+                    <svg
+                      className={`text-emerald-400 ${isSmall ? 'w-2 h-2 mt-0.5' : 'w-2.5 h-2.5 mt-0.5'}`}
+                      fill="currentColor"
+                      viewBox="0 0 24 24"
+                    >
+                      <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-2 15l-5-5 1.41-1.41L10 14.17l7.59-7.59L19 8l-9 9z" />
+                    </svg>
+                  )}
+                </>
+              )}
+            </div>
+          );
+        })}
+      </div>
     </div>
   );
 }

@@ -138,8 +138,9 @@ function App() {
             onClick={handleTurnOff}
             className="flex items-center gap-1.5 px-3 py-1.5 bg-slate-700/80 hover:bg-slate-600/80 text-slate-300 hover:text-white text-xs font-medium rounded-md border border-slate-600/50 transition-colors"
           >
-            <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-              <path strokeLinecap="round" strokeLinejoin="round" d="M5.636 5.636a9 9 0 1012.728 0M12 3v9" />
+            <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
+              <path strokeLinecap="round" strokeLinejoin="round" d="M9 17.25v1.007a3 3 0 01-.879 2.122L7.5 21h9l-.621-.621A3 3 0 0115 18.257V17.25m6-12V15a2.25 2.25 0 01-2.25 2.25H5.25A2.25 2.25 0 013 15V5.25A2.25 2.25 0 015.25 3h13.5A2.25 2.25 0 0121 5.25z" />
+              <path strokeLinecap="round" strokeLinejoin="round" d="M3.5 3.5l17 17" strokeWidth={2} />
             </svg>
             Turn Off
           </button>
@@ -157,12 +158,7 @@ function App() {
 
         {/* Profiles Section */}
         <div className="flex-1 flex flex-col min-h-0">
-          <div className="flex items-center justify-between mb-2">
-            <h2 className="text-[11px] font-medium text-slate-500 uppercase tracking-wider">Profiles</h2>
-            <span className="text-[10px] text-slate-500 bg-slate-800/80 px-1.5 py-0.5 rounded">
-              {profiles.length}
-            </span>
-          </div>
+          <h2 className="text-[11px] font-medium text-slate-500 uppercase tracking-wider mb-2">Profiles</h2>
           <div className="flex-1 overflow-y-auto">
             <ProfileList
               profiles={profiles}

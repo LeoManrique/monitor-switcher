@@ -34,7 +34,7 @@ export function ProfileList({ profiles, activeProfile, onLoad, onDelete, isLoadi
   }
 
   return (
-    <div className="grid grid-cols-2 gap-2">
+    <div className="grid grid-cols-[repeat(2,minmax(200px,1fr))] gap-2 overflow-x-auto">
       {profiles.map((profile) => (
         <ProfileItem
           key={profile.name}

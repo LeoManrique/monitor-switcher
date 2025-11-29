@@ -1,5 +1,6 @@
 import { useState, useEffect, useCallback } from 'react';
 import { invoke } from '@tauri-apps/api/core';
+import { listen } from '@tauri-apps/api/event';
 import type { ProfileDetails, MonitorDetails } from '../types';
 
 // Compare two monitor configurations to see if they match
@@ -64,6 +65,16 @@ export function useProfiles() {
 
   useEffect(() => {
     refresh();
+
+    // Listen for profile-changed events (from tray menu or other sources)
+    const unlisten = listen('profile-changed', () => {
+      // Small delay to let Windows apply display changes
+      setTimeout(() => refresh(), 500);
+    });
+
+    return () => {
+      unlisten.then((fn) => fn());
+    };
   }, [refresh]);
 
   const saveProfile = useCallback(async (name: string) => {

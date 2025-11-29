@@ -119,14 +119,9 @@ function SavePopup() {
         {/* Existing profiles list */}
         {existingProfiles.length > 0 && (
           <div className="mt-3 flex-1 min-h-0 flex flex-col">
-            <div className="flex items-center justify-between mb-2">
-              <span className="text-[11px] font-medium text-slate-500 uppercase tracking-wider">
-                Existing Profiles
-              </span>
-              <span className="text-[10px] text-slate-500 bg-slate-800/80 px-1.5 py-0.5 rounded">
-                {existingProfiles.length}
-              </span>
-            </div>
+            <span className="text-[11px] font-medium text-slate-500 uppercase tracking-wider mb-2 block">
+              Existing Profiles
+            </span>
             <div className="flex-1 overflow-y-auto">
               {existingProfiles.map((profile) => {
                 const isSelected = profile.toLowerCase() === name.trim().toLowerCase();

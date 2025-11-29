@@ -8,7 +8,7 @@ use profile::{settings_to_profile, profile_to_settings, list_profiles as storage
 
 use serde::Serialize;
 use tauri::{
-    AppHandle, Manager, WebviewUrl, WebviewWindowBuilder, Wry,
+    AppHandle, Emitter, Manager, WebviewUrl, WebviewWindowBuilder, Wry,
     tray::{MouseButton, MouseButtonState, TrayIconBuilder, TrayIconEvent},
     menu::{Menu, MenuItem, IconMenuItem, Submenu, PredefinedMenuItem},
     image::Image,
@@ -82,11 +82,16 @@ async fn save_profile(app: AppHandle, name: String) -> Result<(), String> {
 }
 
 #[tauri::command]
-async fn load_profile(name: String) -> Result<(), String> {
+async fn load_profile(app: AppHandle, name: String) -> Result<(), String> {
+    do_load_profile(&app, &name)
+}
+
+/// Core profile loading logic - shared between command and tray menu
+fn do_load_profile(app: &AppHandle, name: &str) -> Result<(), String> {
     info!("Loading profile: {}", name);
 
     // Load profile from disk
-    let profile = storage_load(&name)?;
+    let profile = storage_load(name)?;
 
     // Convert to CCD settings
     let (mut settings, additional_info) = profile_to_settings(&profile);
@@ -97,17 +102,28 @@ async fn load_profile(name: String) -> Result<(), String> {
     // Apply settings
     set_display_settings(&mut settings)?;
 
+    // Emit event so frontend can refresh active profile state
+    let _ = app.emit("profile-changed", ());
+
     info!("Profile '{}' loaded successfully", name);
     Ok(())
 }
 
 #[tauri::command]
 async fn delete_profile(app: AppHandle, name: String) -> Result<(), String> {
+    do_delete_profile(&app, &name)
+}
+
+/// Core profile deletion logic - shared between command and tray menu
+fn do_delete_profile(app: &AppHandle, name: &str) -> Result<(), String> {
     info!("Deleting profile: {}", name);
-    storage_delete(&name)?;
+    storage_delete(name)?;
 
     // Refresh tray menu to remove deleted profile
-    let _ = refresh_tray_menu(&app);
+    let _ = refresh_tray_menu(app);
+
+    // Emit event so frontend can refresh
+    let _ = app.emit("profile-changed", ());
 
     info!("Profile '{}' deleted successfully", name);
     Ok(())
@@ -308,12 +324,9 @@ fn setup_tray(app: &AppHandle<Wry>) -> Result<(), Box<dyn std::error::Error>> {
 
             if id.starts_with("load_") {
                 let profile_name = &id[5..];
-                let name = profile_name.to_string();
-                tauri::async_runtime::spawn(async move {
-                    if let Err(e) = load_profile(name.clone()).await {
-                        error!("Failed to load profile '{}': {}", name, e);
-                    }
-                });
+                if let Err(e) = do_load_profile(app, profile_name) {
+                    error!("Failed to load profile '{}': {}", profile_name, e);
+                }
             } else if id.starts_with("save_") && id != "save_new" {
                 let profile_name = &id[5..];
                 let app_clone = app.clone();
@@ -325,13 +338,9 @@ fn setup_tray(app: &AppHandle<Wry>) -> Result<(), Box<dyn std::error::Error>> {
                 });
             } else if id.starts_with("delete_") {
                 let profile_name = &id[7..];
-                let app_clone = app.clone();
-                let name = profile_name.to_string();
-                tauri::async_runtime::spawn(async move {
-                    if let Err(e) = delete_profile(app_clone, name.clone()).await {
-                        error!("Failed to delete profile '{}': {}", name, e);
-                    }
-                });
+                if let Err(e) = do_delete_profile(app, profile_name) {
+                    error!("Failed to delete profile '{}': {}", profile_name, e);
+                }
             } else {
                 match id {
                     "save_new" => {
