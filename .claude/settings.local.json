@@ -9,14 +9,12 @@
       "Bash(reg query HKLMSOFTWAREMicrosoftVisualStudio /s)",
       "Bash(findstr:*)",
       "Bash(dir \"C:\\Program Files\\Microsoft Visual Studio\\2022\")",
-      "Bash(dir \"C:\\Program Files\\Microsoft Visual Studio\\2019\")",
       "Bash(dir \"C:\\Program Files (x86)\\Microsoft Visual Studio\\2022\")",
-      "Bash(dir \"C:\\Program Files (x86)\\Microsoft Visual Studio\\2019\")",
-      "Bash(dir \"C:\\Program Files (x86)\\Microsoft Visual Studio\\2022\\BuildTools\\MSBuild\\Current\\Bin\\MSBuild.exe\")",
       "Bash(reg query \"HKLM\\SOFTWARE\\WOW6432Node\\Microsoft\\Microsoft SDKs\\NETFXSDK\")",
       "Bash(reg query \"HKLM\\SOFTWARE\\Microsoft\\NET Framework Setup\\NDP\\v4\\Full\")",
       "Bash(dir:*)",
-      "Bash(dir \"c:\\Users\\Leo\\GitProjects\\Desktop\\monitor-switcher\\MonitorSwitcherGUI\\MonitorSwitcherGUI\\bin\\Release\\*.exe\")"
+      "Bash(where rustc:*)",
+      "Bash(rustc:*)"
     ],
     "deny": [],
     "ask": []
