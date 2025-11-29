@@ -49,7 +49,7 @@
     <WarningLevel>4</WarningLevel>
   </PropertyGroup>
   <PropertyGroup>
-    <ApplicationIcon>MainIcon.ico</ApplicationIcon>
+    <ApplicationIcon>Resources\Icons\MainIcon.ico</ApplicationIcon>
   </PropertyGroup>
   <PropertyGroup>
     <ManifestCertificateThumbprint>D68D907E14D37EFE956A0D2EAC5E64D290B6627A</ManifestCertificateThumbprint>
@@ -132,25 +132,27 @@
     </ProjectReference>
   </ItemGroup>
   <ItemGroup>
-    <EmbeddedResource Include="DeleteProfile.ico" />
-  </ItemGroup>
-  <ItemGroup>
-    <EmbeddedResource Include="Profile.ico" />
-  </ItemGroup>
-  <ItemGroup>
-    <EmbeddedResource Include="Exit.ico" />
-  </ItemGroup>
-  <ItemGroup>
-    <EmbeddedResource Include="MainIcon.ico" />
-  </ItemGroup>
-  <ItemGroup>
-    <EmbeddedResource Include="SaveProfile.ico" />
-  </ItemGroup>
-  <ItemGroup>
-    <EmbeddedResource Include="NewProfile.ico" />
-  </ItemGroup>
-  <ItemGroup>
-    <EmbeddedResource Include="About.ico" />
+    <EmbeddedResource Include="Resources\Icons\DeleteProfile.ico">
+      <LogicalName>MonitorSwitcherGUI.DeleteProfile.ico</LogicalName>
+    </EmbeddedResource>
+    <EmbeddedResource Include="Resources\Icons\Profile.ico">
+      <LogicalName>MonitorSwitcherGUI.Profile.ico</LogicalName>
+    </EmbeddedResource>
+    <EmbeddedResource Include="Resources\Icons\Exit.ico">
+      <LogicalName>MonitorSwitcherGUI.Exit.ico</LogicalName>
+    </EmbeddedResource>
+    <EmbeddedResource Include="Resources\Icons\MainIcon.ico">
+      <LogicalName>MonitorSwitcherGUI.MainIcon.ico</LogicalName>
+    </EmbeddedResource>
+    <EmbeddedResource Include="Resources\Icons\SaveProfile.ico">
+      <LogicalName>MonitorSwitcherGUI.SaveProfile.ico</LogicalName>
+    </EmbeddedResource>
+    <EmbeddedResource Include="Resources\Icons\NewProfile.ico">
+      <LogicalName>MonitorSwitcherGUI.NewProfile.ico</LogicalName>
+    </EmbeddedResource>
+    <EmbeddedResource Include="Resources\Icons\About.ico">
+      <LogicalName>MonitorSwitcherGUI.About.ico</LogicalName>
+    </EmbeddedResource>
   </ItemGroup>
   <ItemGroup>
     <BootstrapperPackage Include=".NETFramework,Version=v4.8">
@@ -187,13 +189,17 @@
     </PublishFile>
   </ItemGroup>
   <ItemGroup>
-    <EmbeddedResource Include="Hotkey.ico" />
+    <EmbeddedResource Include="Resources\Icons\Hotkey.ico">
+      <LogicalName>MonitorSwitcherGUI.Hotkey.ico</LogicalName>
+    </EmbeddedResource>
   </ItemGroup>
   <ItemGroup>
     <WCFMetadata Include="Service References\" />
   </ItemGroup>
   <ItemGroup>
-    <EmbeddedResource Include="PayPal.png" />
+    <EmbeddedResource Include="Resources\PayPal.png">
+      <LogicalName>MonitorSwitcherGUI.PayPal.png</LogicalName>
+    </EmbeddedResource>
   </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
   <!-- To modify your build process, add your task inside one of the targets below and uncomment it. 
