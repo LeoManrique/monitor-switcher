@@ -160,6 +160,7 @@ fn build_tray_menu(app: &AppHandle<Wry>) -> Result<Menu<Wry>, tauri::Error> {
 
     // Load icons
     let monitor_icon = load_menu_icon(app, "monitor");
+    let monitor_delete_icon = load_menu_icon(app, "monitor-delete");
     let save_icon = load_menu_icon(app, "save");
     let delete_icon = load_menu_icon(app, "delete");
     let power_icon = load_menu_icon(app, "power");
@@ -221,7 +222,7 @@ fn build_tray_menu(app: &AppHandle<Wry>) -> Result<Menu<Wry>, tauri::Error> {
                     format!("delete_{}", profile),
                     profile,
                     true,
-                    delete_icon.clone(),
+                    monitor_delete_icon.clone(),
                     None::<&str>,
                 )?)?;
             }
