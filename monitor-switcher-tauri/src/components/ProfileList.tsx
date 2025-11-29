@@ -1,7 +1,8 @@
 import { ProfileItem } from './ProfileItem';
+import type { ProfileDetails } from '../types';
 
 interface ProfileListProps {
-  profiles: string[];
+  profiles: ProfileDetails[];
   onLoad: (name: string) => Promise<void>;
   onDelete: (name: string) => Promise<void>;
   isLoading: boolean;
@@ -32,11 +33,11 @@ export function ProfileList({ profiles, onLoad, onDelete, isLoading }: ProfileLi
   }
 
   return (
-    <div className="flex flex-col gap-2">
-      {profiles.map((name) => (
+    <div className="grid grid-cols-2 gap-2">
+      {profiles.map((profile) => (
         <ProfileItem
-          key={name}
-          name={name}
+          key={profile.name}
+          profile={profile}
           onLoad={onLoad}
           onDelete={onDelete}
         />

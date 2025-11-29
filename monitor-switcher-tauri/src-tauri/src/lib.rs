@@ -4,8 +4,9 @@ mod ccd;
 mod profile;
 
 use ccd::{get_display_settings, set_display_settings, turn_off_monitors as ccd_turn_off, match_adapter_ids, get_additional_info_for_modes};
-use profile::{settings_to_profile, profile_to_settings, list_profiles as storage_list, save_profile as storage_save, load_profile as storage_load, delete_profile as storage_delete, profile_exists as storage_exists};
+use profile::{settings_to_profile, profile_to_settings, list_profiles as storage_list, save_profile as storage_save, load_profile as storage_load, delete_profile as storage_delete, profile_exists as storage_exists, get_profile_details as storage_get_details, MonitorDetails};
 
+use serde::Serialize;
 use tauri::{
     AppHandle, Manager, WebviewUrl, WebviewWindowBuilder, Wry,
     tray::{MouseButton, MouseButtonState, TrayIconBuilder, TrayIconEvent},
@@ -16,12 +17,45 @@ use std::path::PathBuf;
 use log::{info, error};
 
 // ============================================================================
+// Types for Frontend
+// ============================================================================
+
+/// Profile with detailed monitor information.
+#[derive(Debug, Clone, Serialize)]
+#[serde(rename_all = "camelCase")]
+pub struct ProfileDetails {
+    pub name: String,
+    pub monitors: Vec<MonitorDetails>,
+}
+
+// ============================================================================
 // Tauri Commands
 // ============================================================================
 
 #[tauri::command]
 async fn list_profiles() -> Result<Vec<String>, String> {
     storage_list()
+}
+
+#[tauri::command]
+async fn list_profiles_with_details() -> Result<Vec<ProfileDetails>, String> {
+    let names = storage_list()?;
+    let mut profiles = Vec::new();
+
+    for name in names {
+        match storage_get_details(&name) {
+            Ok(monitors) => {
+                profiles.push(ProfileDetails { name, monitors });
+            }
+            Err(e) => {
+                log::warn!("Failed to get details for profile '{}': {}", name, e);
+                // Include profile with empty monitors on error
+                profiles.push(ProfileDetails { name, monitors: Vec::new() });
+            }
+        }
+    }
+
+    Ok(profiles)
 }
 
 #[tauri::command]
@@ -107,6 +141,18 @@ fn open_save_popup(app: &AppHandle<Wry>) {
         return;
     }
 
+    // Calculate dynamic height based on number of profiles
+    // Base height: title bar (40) + input section (70) + buttons (50) + padding (30) = 190
+    // Per profile: ~39px each (compact list style)
+    // Min height when no profiles: 165
+    // Max height: 350 (to avoid huge windows)
+    let profile_count = storage_list().unwrap_or_default().len();
+    let base_height = 165.0_f64;
+    let per_profile_height = 39.0_f64;
+    let section_header_height = if profile_count > 0 { 38.0 } else { 0.0 };
+    let calculated_height = base_height + section_header_height + (profile_count as f64 * per_profile_height);
+    let popup_height = calculated_height.min(350.0);
+
     // Create popup window
     let app_clone = app.clone();
     match WebviewWindowBuilder::new(
@@ -115,7 +161,7 @@ fn open_save_popup(app: &AppHandle<Wry>) {
         WebviewUrl::App("popup.html".into()),
     )
     .title("Save Profile")
-    .inner_size(300.0, 165.0)
+    .inner_size(300.0, popup_height)
     .resizable(false)
     .maximizable(false)
     .minimizable(false)
@@ -374,6 +420,7 @@ pub fn run() {
         })
         .invoke_handler(tauri::generate_handler![
             list_profiles,
+            list_profiles_with_details,
             save_profile,
             load_profile,
             delete_profile,

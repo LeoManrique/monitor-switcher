@@ -14,7 +14,8 @@
       "Bash(reg query \"HKLM\\SOFTWARE\\Microsoft\\NET Framework Setup\\NDP\\v4\\Full\")",
       "Bash(dir:*)",
       "Bash(where rustc:*)",
-      "Bash(rustc:*)"
+      "Bash(rustc:*)",
+      "Bash(cargo check:*)"
     ],
     "deny": [],
     "ask": []

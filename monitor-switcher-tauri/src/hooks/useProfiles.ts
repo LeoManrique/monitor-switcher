@@ -1,14 +1,15 @@
 import { useState, useEffect, useCallback } from 'react';
 import { invoke } from '@tauri-apps/api/core';
+import type { ProfileDetails } from '../types';
 
 export function useProfiles() {
-  const [profiles, setProfiles] = useState<string[]>([]);
+  const [profiles, setProfiles] = useState<ProfileDetails[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
   const refresh = useCallback(async () => {
     try {
-      const profileList = await invoke<string[]>('list_profiles');
+      const profileList = await invoke<ProfileDetails[]>('list_profiles_with_details');
       setProfiles(profileList || []);
       setError(null);
     } catch (err) {
