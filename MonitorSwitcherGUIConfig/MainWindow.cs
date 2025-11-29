@@ -31,10 +31,10 @@ namespace MonitorSwitcherGUI
         private void UpdateProfileList()
         {
             String settingsDirectory = MonitorSwitcherGUI.GetSettingsDirectory(null);
-            string settingsDirectoryProfiles = MonitorSwitcherGUI.GetSettingsProfielDirectotry(settingsDirectory);
+            string settingsDirectoryProfiles = MonitorSwitcherGUI.GetSettingsProfileDirectory(settingsDirectory);
 
             // get profiles
-            string[] profiles = Directory.GetFiles(settingsDirectoryProfiles, "*.xml");
+            string[] profiles = Directory.GetFiles(settingsDirectoryProfiles, "*.json");
             foreach (string profile in profiles)
             {
                 string itemCaption = Path.GetFileNameWithoutExtension(profile);

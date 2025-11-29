@@ -1,4 +1,4 @@
-﻿/* This Source Code Form is subject to the terms of the Mozilla Public
+/* This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
  * file, You can obtain one at http://mozilla.org/MPL/2.0/. */
 
@@ -9,9 +9,9 @@ using System.Drawing;
 using System.Windows.Forms;
 using System.ComponentModel;
 using System.IO;
-using System.Xml;
 using System.Runtime.InteropServices;
 using System.Reflection;
+using System.Web.Script.Serialization;
 
 namespace MonitorSwitcherGUI
 {
@@ -41,16 +41,15 @@ namespace MonitorSwitcherGUI
 
         private NotifyIcon trayIcon;
         private ContextMenuStrip trayMenu;
-        private String settingsDirectory;
-        private String settingsDirectoryProfiles;
+        private string settingsDirectory;
+        private string settingsDirectoryProfiles;
         private List<Hotkey> Hotkeys;
-        //private GlobalKeyboardHook KeyHook; 
 
         public MonitorSwitcherGUI(string CustomSettingsDirectory)
         {
             // Initialize settings directory
             settingsDirectory = GetSettingsDirectory(CustomSettingsDirectory);
-            settingsDirectoryProfiles = GetSettingsProfielDirectotry(settingsDirectory);
+            settingsDirectoryProfiles = GetSettingsProfileDirectory(settingsDirectory);
 
             if (!Directory.Exists(settingsDirectory))
                 Directory.CreateDirectory(settingsDirectory);
@@ -62,11 +61,6 @@ namespace MonitorSwitcherGUI
 
             // Load all settings
             LoadSettings();
-
-            // Inizialize globa keyboard hook or hotkeys
-            //KeyHook = new GlobalKeyboardHook();
-            //KeyHook.KeyDown += new KeyEventHandler(KeyHook_KeyDown);
-            //KeyHook.KeyUp += new KeyEventHandler(KeyHook_KeyUp);
 
             // Refresh Hotkey Hooks
             KeyHooksRefresh();
@@ -89,7 +83,7 @@ namespace MonitorSwitcherGUI
             trayMenu.ImageList.Images.Add(Image.FromStream(myStream));
 
             // finally build tray menu
-            BuildTrayMenu();            
+            BuildTrayMenu();
 
             // Create tray icon
             trayIcon = new NotifyIcon();
@@ -100,9 +94,9 @@ namespace MonitorSwitcherGUI
             trayIcon.MouseUp += OnTrayClick;
         }
 
-        public static String GetSettingsDirectory(string customSettingsDirectory)
+        public static string GetSettingsDirectory(string customSettingsDirectory)
         {
-            String dir = "";
+            string dir = "";
             if (string.IsNullOrEmpty(customSettingsDirectory))
             {
                 dir = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData), "MonitorSwitcher");
@@ -114,7 +108,7 @@ namespace MonitorSwitcherGUI
             return dir;
         }
 
-        public static String GetSettingsProfielDirectotry(string settingsDirectory)
+        public static string GetSettingsProfileDirectory(string settingsDirectory)
         {
             return Path.Combine(settingsDirectory, "Profiles");
         }
@@ -135,7 +129,7 @@ namespace MonitorSwitcherGUI
             {
                 foreach (Hotkey hotkey in removeList)
                 {
-                    Hotkeys.Remove(hotkey);                    
+                    Hotkeys.Remove(hotkey);
                 }
                 removeList.Clear();
                 SaveSettings();
@@ -146,21 +140,21 @@ namespace MonitorSwitcherGUI
             {
                 hotkey.UnregisterHotkey();
                 hotkey.RegisterHotkey(this);
-            }           
+            }
         }
 
         public void KeyHook_KeyUp(object sender, HandledEventArgs e)
         {
-            HotkeyCtrl hotkeyCtrl = (sender as HotkeyCtrl);   
+            HotkeyCtrl hotkeyCtrl = (sender as HotkeyCtrl);
             Hotkey hotkey = FindHotkey(hotkeyCtrl);
             LoadProfile(hotkey.profileName);
             e.Handled = true;
         }
 
         public void KeyHook_KeyDown(object sender, HandledEventArgs e)
-        {            
+        {
             e.Handled = true;
-        } 
+        }
 
         public void LoadSettings()
         {
@@ -170,65 +164,61 @@ namespace MonitorSwitcherGUI
             }
             Hotkeys.Clear();
 
-            // Loading the xml file
-            if (!File.Exists(SettingsFileFromName("Hotkeys")))
+            // Loading the JSON file
+            string settingsFile = SettingsFileFromName("Hotkeys");
+            if (!File.Exists(settingsFile))
                 return;
-
-            System.Xml.Serialization.XmlSerializer readerHotkey = new System.Xml.Serialization.XmlSerializer(typeof(Hotkey));           
 
             try
             {
-                XmlReader xml = XmlReader.Create(SettingsFileFromName("Hotkeys"));
-                xml.Read();
-                while (true)
-                {
-                    if ((xml.Name.CompareTo("Hotkey") == 0) && (xml.IsStartElement()))
-                    {
-                        Hotkey hotkey = (Hotkey)readerHotkey.Deserialize(xml);
-                        Hotkeys.Add(hotkey);
-                        continue;
-                    }
+                string json = File.ReadAllText(settingsFile);
+                var serializer = new JavaScriptSerializer();
+                var hotkeyDataList = serializer.Deserialize<List<HotkeyData>>(json);
 
-                    if (!xml.Read())
+                if (hotkeyDataList != null)
+                {
+                    foreach (var data in hotkeyDataList)
                     {
-                        break;
+                        var hotkey = new Hotkey();
+                        hotkey.Ctrl = data.Ctrl;
+                        hotkey.Alt = data.Alt;
+                        hotkey.Shift = data.Shift;
+                        hotkey.Key = (Keys)data.Key;
+                        hotkey.profileName = data.ProfileName;
+                        Hotkeys.Add(hotkey);
                     }
                 }
-                xml.Close();
             }
             catch
             {
+                // Failed to load settings, start with empty list
             }
         }
 
         public void SaveSettings()
         {
-            System.Xml.Serialization.XmlSerializer writerHotkey = new System.Xml.Serialization.XmlSerializer(typeof(Hotkey));
-
-            XmlWriterSettings xmlSettings = new XmlWriterSettings();
-            xmlSettings.CloseOutput = true;
-
             try
             {
-                using (FileStream fileStream = new FileStream(SettingsFileFromName("Hotkeys"), FileMode.Create))
+                var hotkeyDataList = new List<HotkeyData>();
+                foreach (Hotkey hotkey in Hotkeys)
                 {
-                    XmlWriter xml = XmlWriter.Create(fileStream, xmlSettings);
-                    xml.WriteStartDocument();
-                    xml.WriteStartElement("hotkeys");
-                    foreach (Hotkey hotkey in Hotkeys)
+                    hotkeyDataList.Add(new HotkeyData
                     {
-                        writerHotkey.Serialize(xml, hotkey);
-                    }
-                    xml.WriteEndElement();
-                    xml.WriteEndDocument();
-                    xml.Flush();
-                    xml.Close();
-
-                    fileStream.Close();
+                        Ctrl = hotkey.Ctrl,
+                        Alt = hotkey.Alt,
+                        Shift = hotkey.Shift,
+                        Key = (int)hotkey.Key,
+                        ProfileName = hotkey.profileName
+                    });
                 }
+
+                var serializer = new JavaScriptSerializer();
+                string json = serializer.Serialize(hotkeyDataList);
+                File.WriteAllText(SettingsFileFromName("Hotkeys"), json);
             }
             catch
             {
+                // Failed to save settings
             }
         }
 
@@ -243,7 +233,7 @@ namespace MonitorSwitcherGUI
             return null;
         }
 
-        public Hotkey FindHotkey(String name)
+        public Hotkey FindHotkey(string name)
         {
             foreach (Hotkey hotkey in Hotkeys)
             {
@@ -263,8 +253,8 @@ namespace MonitorSwitcherGUI
             trayMenu.Items.Add("Load Profile").Enabled = false;
             trayMenu.Items.Add("-");
 
-            // Find all profile files
-            string[] profiles = Directory.GetFiles(settingsDirectoryProfiles, "*.xml");
+            // Find all profile files (JSON format)
+            string[] profiles = Directory.GetFiles(settingsDirectoryProfiles, "*.json");
 
             // Add to load menu
             foreach (string profile in profiles)
@@ -281,7 +271,7 @@ namespace MonitorSwitcherGUI
             saveMenu.ImageIndex = 4;
             saveMenu.DropDown = new ToolStripDropDownMenu();
             saveMenu.DropDown.ImageList = trayMenu.ImageList;
-            trayMenu.Items.Add(saveMenu);            
+            trayMenu.Items.Add(saveMenu);
 
             newMenuItem = saveMenu.DropDownItems.Add("New Profile...");
             newMenuItem.Click += OnMenuSaveAs;
@@ -325,7 +315,7 @@ namespace MonitorSwitcherGUI
                 newMenuItem = hotkeyMenu.DropDownItems.Add(itemCaption + " " + hotkeyString);
                 newMenuItem.Tag = itemCaption;
                 newMenuItem.Click += OnHotkeySet;
-                newMenuItem.ImageIndex = 3;                
+                newMenuItem.ImageIndex = 3;
             }
 
             trayMenu.Items.Add("-");
@@ -337,7 +327,7 @@ namespace MonitorSwitcherGUI
             newMenuItem = trayMenu.Items.Add("About");
             newMenuItem.Click += OnMenuAbout;
             newMenuItem.ImageIndex = 6;
-            
+
             newMenuItem = trayMenu.Items.Add("Donate");
             newMenuItem.Click += OnMenuDonate;
             newMenuItem.ImageIndex = 8;
@@ -349,7 +339,7 @@ namespace MonitorSwitcherGUI
 
         public string ProfileFileFromName(string name)
         {
-            string fileName = name + ".xml";
+            string fileName = name + ".json";
             string filePath = Path.Combine(settingsDirectoryProfiles, fileName);
 
             return filePath;
@@ -357,7 +347,7 @@ namespace MonitorSwitcherGUI
 
         public string SettingsFileFromName(string name)
         {
-            string fileName = name + ".xml";
+            string fileName = name + ".json";
             string filePath = Path.Combine(settingsDirectory, fileName);
 
             return filePath;
@@ -370,8 +360,8 @@ namespace MonitorSwitcherGUI
         }
 
         public void OnMenuAbout(object sender, EventArgs e)
-        { 
-            MessageBox.Show("Monitor Profile Switcher by Martin Krämer \n(MartinKraemer84@gmail.com)\nVersion 0.8.0.0\nCopyright 2013-2017 \n\nhttps://sourceforge.net/projects/monitorswitcher/", "About Monitor Profile Switcher", MessageBoxButtons.OK, MessageBoxIcon.Information);
+        {
+            MessageBox.Show("Monitor Profile Switcher by Martin Krämer \n(MartinKraemer84@gmail.com)\nVersion 0.9.0.0\nCopyright 2013-2017 \n\nhttps://sourceforge.net/projects/monitorswitcher/", "About Monitor Profile Switcher", MessageBoxButtons.OK, MessageBoxIcon.Information);
         }
 
         public void OnMenuDonate(object sender, EventArgs e)
@@ -407,7 +397,7 @@ namespace MonitorSwitcherGUI
         {
             string profileName = (((ToolStripMenuItem)sender).Tag as string);
             Hotkey hotkey = FindHotkey(profileName);
-            Boolean isNewHotkey = false;
+            bool isNewHotkey = false;
             if (hotkey == null)
                 isNewHotkey = true;
             if (HotkeySetting("Set Hotkey for Monitor Profile '" + profileName + "'", "Enter name of new profile", ref hotkey) == DialogResult.OK)
@@ -487,7 +477,7 @@ namespace MonitorSwitcherGUI
         {
             Visible = false; // Hide form window.
             ShowInTaskbar = false; // Remove from taskbar.
-            
+
             base.OnLoad(e);
         }
 
@@ -570,16 +560,16 @@ namespace MonitorSwitcherGUI
                 // check if any additional key was pressed, if not don't acceppt hotkey
                 if ((hotkey.Key < Keys.D0) || ((!hotkey.Alt) && (!hotkey.Ctrl) && (!hotkey.Shift)))
                     textBox.Text = "";
-            }                
+            }
         }
-        
+
         static void textBox_KeyDown(object sender, KeyEventArgs e)
         {
             TextBox textBox = (sender as TextBox);
             Hotkey hotkey = (textBox.Tag as Hotkey);
             if (hotkey == null)
                 hotkey = new Hotkey();
-            hotkey.AssignFromKeyEventArgs(e);            
+            hotkey.AssignFromKeyEventArgs(e);
 
             e.Handled = true;
             e.SuppressKeyPress = true; // don't add user input to text box, just use custom display
@@ -615,7 +605,7 @@ namespace MonitorSwitcherGUI
             buttonOk.Text = "OK";
             buttonCancel.Text = "Cancel";
             buttonOk.DialogResult = DialogResult.OK;
-            buttonCancel.DialogResult = DialogResult.Cancel;            
+            buttonCancel.DialogResult = DialogResult.Cancel;
 
             label.SetBounds(9, 10, 372, 13);
             textBox.SetBounds(12, 36, 372, 20);
@@ -643,15 +633,27 @@ namespace MonitorSwitcherGUI
         }
     }
 
+    /// <summary>
+    /// Simple data class for JSON serialization of hotkeys
+    /// </summary>
+    public class HotkeyData
+    {
+        public bool Ctrl { get; set; }
+        public bool Alt { get; set; }
+        public bool Shift { get; set; }
+        public int Key { get; set; }
+        public string ProfileName { get; set; }
+    }
+
     [StructLayout(LayoutKind.Sequential)]
     public class Hotkey
     {
-        public Boolean Ctrl;
-        public Boolean Alt;
-        public Boolean Shift;
-        public Boolean RemoveKey; 
+        public bool Ctrl;
+        public bool Alt;
+        public bool Shift;
+        public bool RemoveKey;
         public Keys Key;
-        public String profileName;
+        public string profileName;
 
         public HotkeyCtrl hotkeyCtrl;
 
@@ -671,7 +673,7 @@ namespace MonitorSwitcherGUI
 
             if (!hotkeyCtrl.GetCanRegister(parent))
             {
-                // something went wrong, ignore for nw
+                // something went wrong, ignore for now
             }
             else
             {
@@ -696,7 +698,7 @@ namespace MonitorSwitcherGUI
         }
 
         public override string ToString()
-        {            
+        {
             List<string> keys = new List<string>();
 
             if (Ctrl == true)

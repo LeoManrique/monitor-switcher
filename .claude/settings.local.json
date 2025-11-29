@@ -1,0 +1,24 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(tree:*)",
+      "Bash(cmd /c \"where msbuild 2>nul || echo MSBuild not found in PATH\")",
+      "Bash(cmd /c \"dotnet --version 2>nul || echo dotnet not found\")",
+      "Bash(cmd /c \"if exist \"\"%ProgramFiles%\\Microsoft Visual Studio\"\" (dir \"\"%ProgramFiles%\\Microsoft Visual Studio\"\" /b 2>nul) else (echo VS not found in Program Files)\")",
+      "Bash(dotnet:*)",
+      "Bash(reg query HKLMSOFTWAREMicrosoftVisualStudio /s)",
+      "Bash(findstr:*)",
+      "Bash(dir \"C:\\Program Files\\Microsoft Visual Studio\\2022\")",
+      "Bash(dir \"C:\\Program Files\\Microsoft Visual Studio\\2019\")",
+      "Bash(dir \"C:\\Program Files (x86)\\Microsoft Visual Studio\\2022\")",
+      "Bash(dir \"C:\\Program Files (x86)\\Microsoft Visual Studio\\2019\")",
+      "Bash(dir \"C:\\Program Files (x86)\\Microsoft Visual Studio\\2022\\BuildTools\\MSBuild\\Current\\Bin\\MSBuild.exe\")",
+      "Bash(reg query \"HKLM\\SOFTWARE\\WOW6432Node\\Microsoft\\Microsoft SDKs\\NETFXSDK\")",
+      "Bash(reg query \"HKLM\\SOFTWARE\\Microsoft\\NET Framework Setup\\NDP\\v4\\Full\")",
+      "Bash(dir:*)",
+      "Bash(dir \"c:\\Users\\Leo\\GitProjects\\Desktop\\monitor-switcher\\MonitorSwitcherGUI\\MonitorSwitcherGUI\\bin\\Release\\*.exe\")"
+    ],
+    "deny": [],
+    "ask": []
+  }
+}
