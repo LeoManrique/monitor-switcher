@@ -32,9 +32,17 @@ A Windows utility for saving and restoring multi-monitor display configurations.
 - Windows 7 or later
 - .NET Framework 4.8
 
+## Building
+
+```bash
+msbuild MonitorSwitcherGUI\MonitorSwitcherGUI.sln /p:Configuration=Release /p:Platform=x86
+```
+
+Output binaries will be in `MonitorSwitcherGUI\MonitorSwitcherGUI\bin\Release\`.
+
 ## Installation
 
-1. Download the latest release
+1. Download the latest release (or build from source)
 2. Extract to a folder of your choice
 3. Run `MonitorSwitcherGUI.exe` for the tray app, or use `MonitorSwitcher.exe` from command line
 
