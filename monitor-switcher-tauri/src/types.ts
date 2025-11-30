@@ -7,6 +7,7 @@ export interface MonitorDetails {
   positionY: number;
   rotation: number; // 1=0°, 2=90°, 3=180°, 4=270°
   isPrimary: boolean;
+  dpiScale?: number; // DPI scaling percentage (100, 125, 150, etc.)
 }
 
 export interface ProfileDetails {

@@ -27,6 +27,14 @@ function monitorsMatch(a: MonitorDetails[], b: MonitorDetails[]): boolean {
     ) {
       return false;
     }
+
+    // Compare DPI scale if both have it defined
+    // If one has it and the other doesn't, or they differ, it's not a match
+    const dpiA = ma.dpiScale ?? 100;
+    const dpiB = mb.dpiScale ?? 100;
+    if (dpiA !== dpiB) {
+      return false;
+    }
   }
 
   return true;

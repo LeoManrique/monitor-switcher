@@ -17,6 +17,9 @@ pub struct MonitorDetails {
     pub position_y: i32,
     pub rotation: u32,
     pub is_primary: bool,
+    /// DPI scaling percentage (100, 125, 150, etc.). None if not available.
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub dpi_scale: Option<u32>,
 }
 
 /// Get the profiles directory path.
@@ -168,6 +171,14 @@ pub fn get_profile_details(name: &str) -> Result<Vec<MonitorDetails>, String> {
         // Determine if this is the primary monitor (position 0,0)
         let is_primary = position_x == 0 && position_y == 0;
 
+        // Get DPI scale for this source
+        let source_id = path.source_info.id;
+        let dpi_scale = profile
+            .dpi_scale_info
+            .iter()
+            .find(|info| info.source_id == source_id)
+            .map(|info| info.dpi_scale);
+
         monitors.push(MonitorDetails {
             name,
             width,
@@ -177,6 +188,7 @@ pub fn get_profile_details(name: &str) -> Result<Vec<MonitorDetails>, String> {
             position_y,
             rotation: path.target_info.rotation,
             is_primary,
+            dpi_scale,
         });
     }
 
@@ -185,7 +197,7 @@ pub fn get_profile_details(name: &str) -> Result<Vec<MonitorDetails>, String> {
 
 /// Get current monitor configuration from the system.
 pub fn current_monitors() -> Result<Vec<MonitorDetails>, String> {
-    use crate::ccd::{get_display_settings, get_additional_info_for_modes, MODE_INFO_TYPE_SOURCE};
+    use crate::ccd::{get_display_settings, get_additional_info_for_modes, get_dpi_scaling_info, MODE_INFO_TYPE_SOURCE};
 
     let settings = get_display_settings(true)?;
     let additional_info = get_additional_info_for_modes(&settings.mode_info_array);
@@ -237,6 +249,10 @@ pub fn current_monitors() -> Result<Vec<MonitorDetails>, String> {
 
         let is_primary = position_x == 0 && position_y == 0;
 
+        // Get DPI scaling for this source
+        let dpi_scale = get_dpi_scaling_info(path.source_info.adapter_id, path.source_info.id)
+            .map(|info| info.current);
+
         monitors.push(MonitorDetails {
             name,
             width,
@@ -246,6 +262,7 @@ pub fn current_monitors() -> Result<Vec<MonitorDetails>, String> {
             position_y,
             rotation: path.target_info.rotation,
             is_primary,
+            dpi_scale,
         });
     }
 

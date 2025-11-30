@@ -3,7 +3,7 @@
 mod ccd;
 mod profile;
 
-use ccd::{get_display_settings, set_display_settings, turn_off_monitors as ccd_turn_off, match_adapter_ids, get_additional_info_for_modes};
+use ccd::{get_display_settings, set_display_settings, turn_off_monitors as ccd_turn_off, match_adapter_ids, get_additional_info_for_modes, set_dpi_scaling, LUID};
 use profile::{settings_to_profile, profile_to_settings, list_profiles as storage_list, save_profile as storage_save, load_profile as storage_load, delete_profile as storage_delete, profile_exists as storage_exists, get_profile_details as storage_get_details, MonitorDetails};
 
 use serde::Serialize;
@@ -99,8 +99,26 @@ fn do_load_profile(app: &AppHandle, name: &str) -> Result<(), String> {
     // Match adapter IDs to current system
     match_adapter_ids(&mut settings, &additional_info)?;
 
-    // Apply settings
+    // Apply display settings (resolution, position, etc.)
     set_display_settings(&mut settings)?;
+
+    // Apply DPI scaling for each source
+    // We need to match the saved source IDs to the current system's source IDs
+    // After match_adapter_ids, the settings have updated adapter IDs
+    for dpi_info in &profile.dpi_scale_info {
+        // Find the path with matching source ID in the updated settings
+        if let Some(path) = settings.path_info_array.iter().find(|p| p.source_info.id == dpi_info.source_id) {
+            let adapter_id = LUID {
+                low_part: path.source_info.adapter_id.low_part,
+                high_part: path.source_info.adapter_id.high_part,
+            };
+            if let Err(e) = set_dpi_scaling(adapter_id, dpi_info.source_id, dpi_info.dpi_scale) {
+                log::warn!("Failed to set DPI scaling for source {}: {}", dpi_info.source_id, e);
+            } else {
+                info!("Set DPI scaling to {}% for source {}", dpi_info.dpi_scale, dpi_info.source_id);
+            }
+        }
+    }
 
     // Emit event so frontend can refresh active profile state
     let _ = app.emit("profile-changed", ());

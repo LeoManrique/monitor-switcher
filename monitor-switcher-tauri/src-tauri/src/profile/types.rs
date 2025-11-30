@@ -12,6 +12,9 @@ pub struct DisplayProfile {
     pub path_info_array: Vec<PathInfo>,
     pub mode_info_array: Vec<ModeInfo>,
     pub additional_info: Vec<ProfileMonitorInfo>,
+    /// DPI scaling settings per source. Added in version 2.
+    #[serde(default, skip_serializing_if = "Vec::is_empty")]
+    pub dpi_scale_info: Vec<DpiScaleInfo>,
 }
 
 impl Default for DisplayProfile {
@@ -21,6 +24,7 @@ impl Default for DisplayProfile {
             path_info_array: Vec::new(),
             mode_info_array: Vec::new(),
             additional_info: Vec::new(),
+            dpi_scale_info: Vec::new(),
         }
     }
 }
@@ -148,6 +152,16 @@ pub struct ProfileMonitorInfo {
     pub monitor_device_path: String,
     #[serde(default, deserialize_with = "deserialize_null_string")]
     pub monitor_friendly_device: String,
+}
+
+/// DPI scaling information for a display source.
+#[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(rename_all = "PascalCase")]
+pub struct DpiScaleInfo {
+    /// Source ID this DPI setting applies to.
+    pub source_id: u32,
+    /// DPI scaling percentage (100, 125, 150, etc.).
+    pub dpi_scale: u32,
 }
 
 /// Deserialize null as empty string

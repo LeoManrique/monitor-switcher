@@ -172,6 +172,18 @@ pub struct DisplayConfigDeviceInfoHeader {
     pub id: u32,
 }
 
+impl DisplayConfigDeviceInfoHeader {
+    /// Create a new header for the given info type and struct size.
+    pub fn new<T>(info_type: i32, adapter_id: LUID, id: u32) -> Self {
+        Self {
+            info_type: info_type as u32,
+            size: std::mem::size_of::<T>() as u32,
+            adapter_id,
+            id,
+        }
+    }
+}
+
 /// Device name and path for a target.
 #[repr(C)]
 #[derive(Debug, Clone, Copy)]
@@ -224,3 +236,86 @@ impl DisplayConfigTargetDeviceName {
 // Constants for display configuration
 pub const MODE_INFO_TYPE_SOURCE: u32 = 1;
 pub const MODE_INFO_TYPE_TARGET: u32 = 2;
+
+// Undocumented device info types for DPI scaling
+// These values are used by Windows Settings app but not publicly documented
+pub const DISPLAYCONFIG_DEVICE_INFO_GET_DPI_SCALE: i32 = -3;
+pub const DISPLAYCONFIG_DEVICE_INFO_SET_DPI_SCALE: i32 = -4;
+
+/// Supported DPI scaling percentages.
+/// These are the values available in Windows Display Settings.
+pub const DPI_VALUES: [u32; 12] = [100, 125, 150, 175, 200, 225, 250, 300, 350, 400, 450, 500];
+
+/// Get DPI percentage from array index, with bounds checking.
+#[inline]
+pub fn dpi_from_index(idx: usize) -> Option<u32> {
+    DPI_VALUES.get(idx).copied()
+}
+
+/// Find the index of a DPI percentage value.
+#[inline]
+pub fn dpi_to_index(dpi: u32) -> Option<usize> {
+    DPI_VALUES.iter().position(|&v| v == dpi)
+}
+
+/// Request structure for getting DPI scaling info.
+/// Uses the undocumented type -3 with DisplayConfigGetDeviceInfo.
+#[repr(C)]
+#[derive(Debug, Clone, Copy, Default)]
+pub struct DisplayConfigSourceDpiScaleGet {
+    pub header: DisplayConfigDeviceInfoHeader,
+    /// Steps down from recommended DPI to reach 100%.
+    /// e.g., if -3, then 100% is 3 steps below recommended, meaning recommended is 175%.
+    pub min_scale_rel: i32,
+    /// Current DPI relative to recommended.
+    /// e.g., if recommended is 150% and current is 125%, this would be -1.
+    pub cur_scale_rel: i32,
+    /// Steps up from recommended to reach maximum DPI.
+    pub max_scale_rel: i32,
+}
+
+impl DisplayConfigSourceDpiScaleGet {
+    /// Convert the relative scale values to absolute DPI percentages.
+    pub fn to_dpi_info(&self) -> Option<DpiScalingInfo> {
+        // Validate: current should be between min and max
+        if self.cur_scale_rel < self.min_scale_rel || self.cur_scale_rel > self.max_scale_rel {
+            return None;
+        }
+
+        // min_scale_rel is negative; its absolute value is the recommended DPI index
+        let recommended_idx = (-self.min_scale_rel) as usize;
+        let current_idx = (recommended_idx as i32 + self.cur_scale_rel) as usize;
+        let max_idx = (recommended_idx as i32 + self.max_scale_rel) as usize;
+
+        Some(DpiScalingInfo {
+            minimum: 100, // Always 100%
+            maximum: dpi_from_index(max_idx)?,
+            current: dpi_from_index(current_idx)?,
+            recommended: dpi_from_index(recommended_idx)?,
+        })
+    }
+}
+
+/// Request structure for setting DPI scaling.
+/// Uses the undocumented type -4 with DisplayConfigSetDeviceInfo.
+#[repr(C)]
+#[derive(Debug, Clone, Copy, Default)]
+pub struct DisplayConfigSourceDpiScaleSet {
+    pub header: DisplayConfigDeviceInfoHeader,
+    /// Desired DPI relative to recommended.
+    /// e.g., to set 200% when recommended is 150%, use +2 (two steps up).
+    pub scale_rel: i32,
+}
+
+/// DPI scaling information for a display source.
+#[derive(Debug, Clone, Copy, Default)]
+pub struct DpiScalingInfo {
+    /// Minimum DPI percentage (always 100).
+    pub minimum: u32,
+    /// Maximum supported DPI percentage.
+    pub maximum: u32,
+    /// Currently applied DPI percentage.
+    pub current: u32,
+    /// Windows-recommended DPI percentage for this display.
+    pub recommended: u32,
+}
