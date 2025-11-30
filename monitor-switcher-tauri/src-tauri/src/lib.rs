@@ -169,9 +169,9 @@ fn open_save_popup(app: &AppHandle<Wry>) {
     // Min height when no profiles: 165
     // Max height: 350 (to avoid huge windows)
     let profile_count = storage_list().unwrap_or_default().len();
-    let base_height = 165.0_f64;
-    let per_profile_height = 39.0_f64;
-    let section_header_height = if profile_count > 0 { 38.0 } else { 0.0 };
+    let base_height = 180.0_f64;
+    let per_profile_height = 33.0_f64;
+    let section_header_height = if profile_count > 0 { 36.0 } else { 0.0 };
     let calculated_height = base_height + section_header_height + (profile_count as f64 * per_profile_height);
     let popup_height = calculated_height.min(350.0);
 

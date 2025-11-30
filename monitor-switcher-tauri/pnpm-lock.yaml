@@ -9,10 +9,10 @@ importers:
   .:
     dependencies:
       '@tauri-apps/api':
-        specifier: ^2.0.0
+        specifier: ^2.9.0
         version: 2.9.0
       '@tauri-apps/plugin-opener':
-        specifier: ^2.0.0
+        specifier: ^2.5.2
         version: 2.5.2
       react:
         specifier: ^18.3.1
@@ -25,7 +25,7 @@ importers:
         specifier: ^4.0.0
         version: 4.1.17(vite@5.4.21(lightningcss@1.30.2))
       '@tauri-apps/cli':
-        specifier: ^2.0.0
+        specifier: ^2.9.4
         version: 2.9.4
       '@types/react':
         specifier: ^18.3.0
