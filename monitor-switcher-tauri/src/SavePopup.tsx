@@ -61,24 +61,24 @@ function SavePopup() {
 
   return (
     <div
-      className="h-screen bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900 flex flex-col overflow-hidden rounded-lg border border-slate-700/50"
+      className="h-screen w-screen bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900 flex flex-col rounded-lg border border-slate-700/50"
+      style={{ position: 'fixed', top: 0, left: 0 }}
       onKeyDown={handleKeyDown}
     >
       {/* Draggable title bar */}
-      <div
-        data-tauri-drag-region
-        className="h-10 bg-slate-800/50 flex items-center justify-between pl-3 pr-1 border-b border-slate-700/50 cursor-move shrink-0"
-      >
-        <div className="flex items-center gap-2" data-tauri-drag-region>
+      <div className="h-10 bg-slate-800/50 flex items-center justify-between pl-3 pr-1 border-b border-slate-700/50 shrink-0">
+        {/* Left side - draggable area */}
+        <div data-tauri-drag-region className="flex items-center gap-2 flex-1 cursor-move">
           <div className="w-6 h-6 rounded-md bg-gradient-to-br from-emerald-500 to-emerald-600 flex items-center justify-center">
             <svg className="w-3.5 h-3.5 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
               <path strokeLinecap="round" strokeLinejoin="round" d="M12 4v16m8-8H4" />
             </svg>
           </div>
-          <span className="text-sm font-medium text-slate-200 select-none" data-tauri-drag-region>
+          <span className="text-sm font-medium text-slate-200 select-none">
             Save Profile
           </span>
         </div>
+        {/* Close button - NOT in drag region for hover to work */}
         <button
           onClick={handleCancel}
           className="w-10 h-9 flex items-center justify-center text-slate-400 hover:text-white hover:bg-red-500 transition-colors"
