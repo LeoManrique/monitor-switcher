@@ -4,7 +4,7 @@ mod ccd;
 mod profile;
 
 use ccd::{get_display_settings, set_display_settings, turn_off_monitors as ccd_turn_off, match_adapter_ids, get_additional_info_for_modes, set_dpi_scaling, LUID};
-use profile::{settings_to_profile, profile_to_settings, list_profiles as storage_list, save_profile as storage_save, load_profile as storage_load, delete_profile as storage_delete, profile_exists as storage_exists, get_profile_details as storage_get_details, MonitorDetails};
+use profile::{settings_to_profile, profile_to_settings, list_profiles as storage_list, save_profile as storage_save, load_profile as storage_load, delete_profile as storage_delete, profile_exists as storage_exists, get_profile_details as storage_get_details, current_monitors, MonitorDetails};
 
 use serde::Serialize;
 use tauri::{
@@ -166,13 +166,21 @@ async fn open_save_dialog(app: AppHandle) -> Result<(), String> {
 
 #[tauri::command]
 async fn get_current_monitors() -> Result<Vec<MonitorDetails>, String> {
-    use profile::current_monitors;
     current_monitors()
 }
 
 // ============================================================================
 // Popup Window
 // ============================================================================
+
+/// Calculate popup height based on number of profiles.
+/// Base: 180px, per profile: 33px, section header: 36px (if profiles exist), max: 350px.
+fn calc_popup_height(profile_count: usize) -> f64 {
+    let base = 180.0;
+    let per_profile = 33.0;
+    let header = if profile_count > 0 { 36.0 } else { 0.0 };
+    (base + header + profile_count as f64 * per_profile).min(350.0)
+}
 
 fn open_save_popup(app: &AppHandle<Wry>) {
     // If popup already exists, just focus it
@@ -181,17 +189,8 @@ fn open_save_popup(app: &AppHandle<Wry>) {
         return;
     }
 
-    // Calculate dynamic height based on number of profiles
-    // Base height: title bar (40) + input section (70) + buttons (50) + padding (30) = 190
-    // Per profile: ~39px each (compact list style)
-    // Min height when no profiles: 165
-    // Max height: 350 (to avoid huge windows)
     let profile_count = storage_list().unwrap_or_default().len();
-    let base_height = 180.0_f64;
-    let per_profile_height = 33.0_f64;
-    let section_header_height = if profile_count > 0 { 36.0 } else { 0.0 };
-    let calculated_height = base_height + section_header_height + (profile_count as f64 * per_profile_height);
-    let popup_height = calculated_height.min(350.0);
+    let popup_height = calc_popup_height(profile_count);
 
     // Create popup window
     let app_clone = app.clone();
@@ -340,31 +339,25 @@ fn setup_tray(app: &AppHandle<Wry>) -> Result<(), Box<dyn std::error::Error>> {
         .on_menu_event(move |app, event| {
             let id = event.id().as_ref();
 
-            if id.starts_with("load_") {
-                let profile_name = &id[5..];
-                if let Err(e) = do_load_profile(app, profile_name) {
-                    error!("Failed to load profile '{}': {}", profile_name, e);
+            if let Some(name) = id.strip_prefix("load_") {
+                if let Err(e) = do_load_profile(app, name) {
+                    error!("Failed to load profile '{}': {}", name, e);
                 }
-            } else if id.starts_with("save_") && id != "save_new" {
-                let profile_name = &id[5..];
+            } else if let Some(name) = id.strip_prefix("save_").filter(|n| *n != "new") {
                 let app_clone = app.clone();
-                let name = profile_name.to_string();
+                let name = name.to_string();
                 tauri::async_runtime::spawn(async move {
                     if let Err(e) = save_profile(app_clone, name.clone()).await {
                         error!("Failed to save profile '{}': {}", name, e);
                     }
                 });
-            } else if id.starts_with("delete_") {
-                let profile_name = &id[7..];
-                if let Err(e) = do_delete_profile(app, profile_name) {
-                    error!("Failed to delete profile '{}': {}", profile_name, e);
+            } else if let Some(name) = id.strip_prefix("delete_") {
+                if let Err(e) = do_delete_profile(app, name) {
+                    error!("Failed to delete profile '{}': {}", name, e);
                 }
             } else {
                 match id {
-                    "save_new" => {
-                        // Open popup window for new profile
-                        open_save_popup(app);
-                    }
+                    "save_new" => open_save_popup(app),
                     "turn_off" => {
                         tauri::async_runtime::spawn(async {
                             if let Err(e) = turn_off_monitors().await {
@@ -378,9 +371,7 @@ fn setup_tray(app: &AppHandle<Wry>) -> Result<(), Box<dyn std::error::Error>> {
                             let _ = window.set_focus();
                         }
                     }
-                    "quit" => {
-                        app.exit(0);
-                    }
+                    "quit" => app.exit(0),
                     _ => {}
                 }
             }

@@ -110,12 +110,10 @@ fn try_match_by_friendly_name(
             continue;
         }
 
-        let saved_info = additional_info.get(i);
-        if saved_info.is_none() || !saved_info.unwrap().valid {
+        let Some(saved_info) = additional_info.get(i).filter(|info| info.valid) else {
             continue;
-        }
-        let saved_name = &saved_info.unwrap().monitor_friendly_device;
-        if saved_name.is_empty() {
+        };
+        if saved_info.monitor_friendly_device.is_empty() {
             continue;
         }
 
@@ -125,12 +123,11 @@ fn try_match_by_friendly_name(
                 continue;
             }
 
-            let current_info = current_additional_info.get(j);
-            if current_info.is_none() || !current_info.unwrap().valid {
+            let Some(current_info) = current_additional_info.get(j).filter(|info| info.valid) else {
                 continue;
-            }
+            };
 
-            if &current_info.unwrap().monitor_friendly_device == saved_name {
+            if current_info.monitor_friendly_device == saved_info.monitor_friendly_device {
                 mode.adapter_id = current_mode.adapter_id;
                 mode.id = current_mode.id;
                 matched_any = true;
