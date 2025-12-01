@@ -5,7 +5,8 @@ use std::mem;
 
 #[cfg(windows)]
 use windows_sys::Win32::Devices::Display::{
-    DisplayConfigGetDeviceInfo, GetDisplayConfigBufferSizes, QueryDisplayConfig, SetDisplayConfig,
+    DisplayConfigGetDeviceInfo, DisplayConfigSetDeviceInfo,
+    GetDisplayConfigBufferSizes, QueryDisplayConfig, SetDisplayConfig,
     QDC_ONLY_ACTIVE_PATHS, QDC_ALL_PATHS,
     SDC_APPLY, SDC_USE_SUPPLIED_DISPLAY_CONFIG, SDC_SAVE_TO_DATABASE,
     SDC_NO_OPTIMIZATION, SDC_ALLOW_CHANGES,
@@ -207,4 +208,70 @@ pub fn get_monitor_additional_info(_adapter_id: LUID, _target_id: u32) -> Monito
 #[cfg(not(windows))]
 pub fn turn_off_monitors() -> Result<(), String> {
     Err("Monitor power control is only supported on Windows".to_string())
+}
+
+/// Get DPI scaling information for a display source.
+#[cfg(windows)]
+pub fn get_dpi_scaling_info(adapter_id: LUID, source_id: u32) -> Option<DpiScalingInfo> {
+    let mut request = DisplayConfigSourceDpiScaleGet {
+        header: DisplayConfigDeviceInfoHeader::new::<DisplayConfigSourceDpiScaleGet>(
+            DISPLAYCONFIG_DEVICE_INFO_GET_DPI_SCALE,
+            adapter_id,
+            source_id,
+        ),
+        ..Default::default()
+    };
+
+    let result = unsafe {
+        DisplayConfigGetDeviceInfo(&mut request as *mut _ as *mut _)
+    };
+
+    if result != 0 {
+        return None;
+    }
+
+    request.to_dpi_info()
+}
+
+/// Set DPI scaling for a display source.
+#[cfg(windows)]
+pub fn set_dpi_scaling(adapter_id: LUID, source_id: u32, dpi_percent: u32) -> Result<(), String> {
+    let info = get_dpi_scaling_info(adapter_id, source_id)
+        .ok_or("Failed to get current DPI scaling info")?;
+
+    let dpi_to_set = dpi_percent.clamp(info.minimum, info.maximum);
+
+    let target_idx = dpi_to_index(dpi_to_set)
+        .ok_or_else(|| format!("Invalid DPI value: {}%", dpi_percent))?;
+    let recommended_idx = dpi_to_index(info.recommended)
+        .ok_or("Failed to find recommended DPI index")?;
+
+    let mut request = DisplayConfigSourceDpiScaleSet {
+        header: DisplayConfigDeviceInfoHeader::new::<DisplayConfigSourceDpiScaleSet>(
+            DISPLAYCONFIG_DEVICE_INFO_SET_DPI_SCALE,
+            adapter_id,
+            source_id,
+        ),
+        scale_rel: target_idx as i32 - recommended_idx as i32,
+    };
+
+    let result = unsafe {
+        DisplayConfigSetDeviceInfo(&mut request as *mut _ as *mut _)
+    };
+
+    if result == 0 {
+        Ok(())
+    } else {
+        Err(format!("DisplayConfigSetDeviceInfo failed with error: {}", result))
+    }
+}
+
+#[cfg(not(windows))]
+pub fn get_dpi_scaling_info(_adapter_id: LUID, _source_id: u32) -> Option<DpiScalingInfo> {
+    None
+}
+
+#[cfg(not(windows))]
+pub fn set_dpi_scaling(_adapter_id: LUID, _source_id: u32, _dpi_percent: u32) -> Result<(), String> {
+    Err("DPI scaling is only supported on Windows".to_string())
 }

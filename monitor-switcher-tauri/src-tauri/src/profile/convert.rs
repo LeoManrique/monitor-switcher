@@ -8,6 +8,7 @@ use crate::ccd::{
     LUID, DisplayConfigRational, DisplayConfig2DRegion, PointL,
     DisplayConfigPathSourceInfo, DisplayConfigPathTargetInfo,
     DisplayConfigVideoSignalInfo,
+    get_dpi_scaling_info,
 };
 use super::types::*;
 
@@ -39,11 +40,25 @@ pub fn settings_to_profile(
         })
         .collect();
 
+    // Collect DPI scaling info for each source
+    let dpi_scale_info: Vec<DpiScaleInfo> = settings
+        .path_info_array
+        .iter()
+        .filter_map(|p| {
+            get_dpi_scaling_info(p.source_info.adapter_id, p.source_info.id)
+                .map(|info| DpiScaleInfo {
+                    source_id: p.source_info.id,
+                    dpi_scale: info.current,
+                })
+        })
+        .collect();
+
     DisplayProfile {
         version: 1,
         path_info_array,
         mode_info_array,
         additional_info: additional,
+        dpi_scale_info,
     }
 }
 

@@ -106,7 +106,7 @@ export function MonitorDiagram({ monitors, maxHeight = 120 }: MonitorDiagramProp
                 width: m.displayWidth,
                 height: m.displayHeight,
               }}
-              title={`${m.name}\n${m.width}×${m.height} @ ${formatRefreshRate(m.refreshRate)}${m.isPrimary ? '\n(Primary)' : ''}`}
+              title={`${m.name}\n${m.width}×${m.height} @ ${formatRefreshRate(m.refreshRate)}${m.dpiScale ? `\nScale: ${m.dpiScale}%` : ''}${m.isPrimary ? '\n(Primary)' : ''}`}
             >
               {!isTiny && (
                 <>
@@ -125,6 +125,9 @@ export function MonitorDiagram({ monitors, maxHeight = 120 }: MonitorDiagramProp
                       <span className="text-slate-300">{formatResolution(m.width, m.height)}</span>
                       <span className="text-slate-500 mx-0.5">@</span>
                       <span className="text-emerald-400">{formatRefreshRate(m.refreshRate)}</span>
+                      {m.dpiScale && m.dpiScale !== 100 && (
+                        <span className="text-sky-400 ml-1">{m.dpiScale}%</span>
+                      )}
                     </span>
                   ) : (
                     <>
@@ -138,6 +141,13 @@ export function MonitorDiagram({ monitors, maxHeight = 120 }: MonitorDiagramProp
                       >
                         {formatRefreshRate(m.refreshRate)}
                       </span>
+                      {m.dpiScale && m.dpiScale !== 100 && (
+                        <span
+                          className={`leading-tight text-sky-400 ${isSmall ? 'text-[7px]' : 'text-[9px]'}`}
+                        >
+                          {m.dpiScale}%
+                        </span>
+                      )}
                     </>
                   )}
 
