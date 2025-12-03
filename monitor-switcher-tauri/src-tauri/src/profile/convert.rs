@@ -1,6 +1,6 @@
 //! Conversion between CCD types and profile JSON types.
 
-use crate::ccd::{
+use crate::display::{
     DisplaySettings, MonitorAdditionalInfo,
     DisplayConfigPathInfo, DisplayConfigModeInfo,
     DisplayConfigTargetMode, DisplayConfigSourceMode,

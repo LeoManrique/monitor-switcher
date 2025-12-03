@@ -1,10 +1,26 @@
-//! Monitor Switcher - Save and restore Windows display configurations.
+//! Monitor Switcher - Save and restore display configurations.
+//!
+//! Platform support:
+//! - Windows: CCD API (see display/windows/)
+//! - Linux: XRandR (see display/linux/)
 
-mod ccd;
+mod display;
 mod profile;
 
-use ccd::{get_display_settings, set_display_settings, turn_off_monitors as ccd_turn_off, match_adapter_ids, get_additional_info_for_modes, set_dpi_scaling, LUID};
-use profile::{settings_to_profile, profile_to_settings, list_profiles as storage_list, save_profile as storage_save, load_profile as storage_load, delete_profile as storage_delete, profile_exists as storage_exists, get_profile_details as storage_get_details, current_monitors, MonitorDetails};
+#[cfg(windows)]
+use display::{get_display_settings, set_display_settings, turn_off_monitors as platform_turn_off, match_adapter_ids, get_additional_info_for_modes, set_dpi_scaling, LUID};
+
+#[cfg(target_os = "linux")]
+use display::{get_display_settings, set_display_settings, turn_off_monitors as platform_turn_off, match_adapter_ids, get_additional_info_for_modes};
+
+#[cfg(windows)]
+use profile::{list_profiles as storage_list, save_profile as storage_save, load_profile as storage_load, delete_profile as storage_delete, profile_exists as storage_exists, get_profile_details as storage_get_details, current_monitors, MonitorDetails};
+
+#[cfg(target_os = "linux")]
+use profile::{list_profiles as storage_list, delete_profile as storage_delete, profile_exists as storage_exists, get_profile_details as storage_get_details, current_monitors, MonitorDetails};
+
+#[cfg(windows)]
+use profile::{settings_to_profile, profile_to_settings};
 
 use serde::Serialize;
 use tauri::{
@@ -62,17 +78,29 @@ async fn list_profiles_with_details() -> Result<Vec<ProfileDetails>, String> {
 async fn save_profile(app: AppHandle, name: String) -> Result<(), String> {
     info!("Saving profile: {}", name);
 
-    // Get current display settings
-    let settings = get_display_settings(true)?;
+    #[cfg(windows)]
+    {
+        // Get current display settings
+        let settings = get_display_settings(true)?;
 
-    // Get additional monitor info
-    let additional_info = get_additional_info_for_modes(&settings.mode_info_array);
+        // Get additional monitor info
+        let additional_info = get_additional_info_for_modes(&settings.mode_info_array);
 
-    // Convert to profile format
-    let profile = settings_to_profile(&settings, &additional_info);
+        // Convert to profile format
+        let profile = settings_to_profile(&settings, &additional_info);
 
-    // Save to disk
-    storage_save(&name, &profile)?;
+        // Save to disk
+        storage_save(&name, &profile)?;
+    }
+
+    #[cfg(target_os = "linux")]
+    {
+        // Get current display settings
+        let settings = get_display_settings(true)?;
+
+        // Save Linux profile format
+        profile::save_linux_profile(&name, &settings)?;
+    }
 
     // Refresh tray menu to show new profile
     let _ = refresh_tray_menu(&app);
@@ -90,34 +118,50 @@ async fn load_profile(app: AppHandle, name: String) -> Result<(), String> {
 fn do_load_profile(app: &AppHandle, name: &str) -> Result<(), String> {
     info!("Loading profile: {}", name);
 
-    // Load profile from disk
-    let profile = storage_load(name)?;
+    #[cfg(windows)]
+    {
+        // Load profile from disk
+        let profile = storage_load(name)?;
 
-    // Convert to CCD settings
-    let (mut settings, additional_info) = profile_to_settings(&profile);
+        // Convert to CCD settings
+        let (mut settings, additional_info) = profile_to_settings(&profile);
 
-    // Match adapter IDs to current system
-    match_adapter_ids(&mut settings, &additional_info)?;
+        // Match adapter IDs to current system
+        match_adapter_ids(&mut settings, &additional_info)?;
 
-    // Apply display settings (resolution, position, etc.)
-    set_display_settings(&mut settings)?;
+        // Apply display settings (resolution, position, etc.)
+        set_display_settings(&mut settings)?;
 
-    // Apply DPI scaling for each source
-    // We need to match the saved source IDs to the current system's source IDs
-    // After match_adapter_ids, the settings have updated adapter IDs
-    for dpi_info in &profile.dpi_scale_info {
-        // Find the path with matching source ID in the updated settings
-        if let Some(path) = settings.path_info_array.iter().find(|p| p.source_info.id == dpi_info.source_id) {
-            let adapter_id = LUID {
-                low_part: path.source_info.adapter_id.low_part,
-                high_part: path.source_info.adapter_id.high_part,
-            };
-            if let Err(e) = set_dpi_scaling(adapter_id, dpi_info.source_id, dpi_info.dpi_scale) {
-                log::warn!("Failed to set DPI scaling for source {}: {}", dpi_info.source_id, e);
-            } else {
-                info!("Set DPI scaling to {}% for source {}", dpi_info.dpi_scale, dpi_info.source_id);
+        // Apply DPI scaling for each source
+        // We need to match the saved source IDs to the current system's source IDs
+        // After match_adapter_ids, the settings have updated adapter IDs
+        for dpi_info in &profile.dpi_scale_info {
+            // Find the path with matching source ID in the updated settings
+            if let Some(path) = settings.path_info_array.iter().find(|p| p.source_info.id == dpi_info.source_id) {
+                let adapter_id = LUID {
+                    low_part: path.source_info.adapter_id.low_part,
+                    high_part: path.source_info.adapter_id.high_part,
+                };
+                if let Err(e) = set_dpi_scaling(adapter_id, dpi_info.source_id, dpi_info.dpi_scale) {
+                    log::warn!("Failed to set DPI scaling for source {}: {}", dpi_info.source_id, e);
+                } else {
+                    info!("Set DPI scaling to {}% for source {}", dpi_info.dpi_scale, dpi_info.source_id);
+                }
             }
         }
+    }
+
+    #[cfg(target_os = "linux")]
+    {
+        // Load and apply Linux profile
+        let mut settings = profile::load_linux_profile(name)?;
+
+        // Match output names to current system
+        let additional_info = get_additional_info_for_modes(&settings.outputs);
+        match_adapter_ids(&mut settings, &additional_info)?;
+
+        // Apply display settings
+        set_display_settings(&mut settings)?;
     }
 
     // Emit event so frontend can refresh active profile state
@@ -155,7 +199,7 @@ async fn profile_exists(name: String) -> Result<bool, String> {
 #[tauri::command]
 async fn turn_off_monitors() -> Result<(), String> {
     info!("Turning off monitors");
-    ccd_turn_off()
+    platform_turn_off()
 }
 
 #[tauri::command]
@@ -201,7 +245,8 @@ fn open_save_popup(app: &AppHandle<Wry>) {
     )
     .title("Save Profile")
     .inner_size(300.0, popup_height)
-    .resizable(false)
+    .min_inner_size(280.0, 180.0)
+    .resizable(true)
     .maximizable(false)
     .minimizable(false)
     .decorations(false)

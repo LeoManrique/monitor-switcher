@@ -1,9 +1,16 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { invoke } from '@tauri-apps/api/core';
-import { getCurrentWindow } from '@tauri-apps/api/window';
+import { getCurrentWindow, LogicalSize } from '@tauri-apps/api/window';
 import { ProfileList } from './components/ProfileList';
 import { useProfiles } from './hooks/useProfiles';
 import './App.css';
+
+const WINDOW_STATE_KEY = 'monitor-switcher-window-state';
+
+interface WindowState {
+  width: number;
+  height: number;
+}
 
 function App() {
   const {
@@ -18,6 +25,49 @@ function App() {
   } = useProfiles();
 
   const appWindow = getCurrentWindow();
+  const saveTimeoutRef = useRef<number | null>(null);
+
+  // Restore window size on mount
+  useEffect(() => {
+    const restoreWindowSize = async () => {
+      try {
+        const saved = localStorage.getItem(WINDOW_STATE_KEY);
+        if (saved) {
+          const state: WindowState = JSON.parse(saved);
+          if (state.width > 0 && state.height > 0) {
+            await appWindow.setSize(new LogicalSize(state.width, state.height));
+          }
+        }
+      } catch (e) {
+        console.error('Failed to restore window size:', e);
+      }
+    };
+    restoreWindowSize();
+  }, []);
+
+  // Save window size on resize (debounced)
+  useEffect(() => {
+    const unlisten = appWindow.onResized(({ payload: size }) => {
+      // Debounce saves to avoid excessive writes
+      if (saveTimeoutRef.current) {
+        clearTimeout(saveTimeoutRef.current);
+      }
+      saveTimeoutRef.current = setTimeout(() => {
+        const state: WindowState = {
+          width: size.width,
+          height: size.height,
+        };
+        localStorage.setItem(WINDOW_STATE_KEY, JSON.stringify(state));
+      }, 500);
+    });
+
+    return () => {
+      unlisten.then(fn => fn());
+      if (saveTimeoutRef.current) {
+        clearTimeout(saveTimeoutRef.current);
+      }
+    };
+  }, []);
 
   // Refresh profiles when window gains focus (after popup closes)
   useEffect(() => {

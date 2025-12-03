@@ -1,6 +1,8 @@
-//! Profile JSON types matching the existing C#/Go format.
+//! Profile JSON types matching the existing C#/Go format (Windows only).
 //!
 //! These types use PascalCase field names for backward compatibility.
+
+#![cfg(windows)]
 
 use serde::{Deserialize, Serialize};
 

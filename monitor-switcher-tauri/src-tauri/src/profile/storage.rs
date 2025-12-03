@@ -1,5 +1,6 @@
 //! Profile storage operations.
 
+#[cfg(windows)]
 use super::types::DisplayProfile;
 use serde::Serialize;
 use std::fs;
@@ -74,7 +75,8 @@ pub fn profile_exists(name: &str) -> Result<bool, String> {
     Ok(path.exists())
 }
 
-/// Save a profile to disk.
+/// Save a profile to disk (Windows).
+#[cfg(windows)]
 pub fn save_profile(name: &str, profile: &DisplayProfile) -> Result<(), String> {
     let path = get_profile_path(name)?;
 
@@ -87,7 +89,8 @@ pub fn save_profile(name: &str, profile: &DisplayProfile) -> Result<(), String> 
     Ok(())
 }
 
-/// Load a profile from disk.
+/// Load a profile from disk (Windows).
+#[cfg(windows)]
 pub fn load_profile(name: &str) -> Result<DisplayProfile, String> {
     let path = get_profile_path(name)?;
 
@@ -115,6 +118,7 @@ pub fn delete_profile(name: &str) -> Result<(), String> {
 }
 
 /// Get detailed monitor information from a profile.
+#[cfg(windows)]
 pub fn get_profile_details(name: &str) -> Result<Vec<MonitorDetails>, String> {
     let profile = load_profile(name)?;
     let mut monitors = Vec::new();
@@ -195,9 +199,33 @@ pub fn get_profile_details(name: &str) -> Result<Vec<MonitorDetails>, String> {
     Ok(monitors)
 }
 
-/// Get current monitor configuration from the system.
+/// Get detailed monitor information from a profile (Linux).
+#[cfg(target_os = "linux")]
+pub fn get_profile_details(name: &str) -> Result<Vec<MonitorDetails>, String> {
+    let settings = super::linux::load_linux_profile(name)?;
+
+    let monitors = settings.outputs
+        .iter()
+        .map(|output| MonitorDetails {
+            name: output.name.clone(),
+            width: output.width,
+            height: output.height,
+            refresh_rate: output.refresh_rate as f64,
+            position_x: output.pos_x,
+            position_y: output.pos_y,
+            rotation: output.rotation.to_u32(),
+            is_primary: output.primary,
+            dpi_scale: None, // Linux doesn't track per-monitor DPI in the same way
+        })
+        .collect();
+
+    Ok(monitors)
+}
+
+/// Get current monitor configuration from the system (Windows).
+#[cfg(windows)]
 pub fn current_monitors() -> Result<Vec<MonitorDetails>, String> {
-    use crate::ccd::{get_display_settings, get_additional_info_for_modes, get_dpi_scaling_info, MODE_INFO_TYPE_SOURCE};
+    use crate::display::{get_display_settings, get_additional_info_for_modes, get_dpi_scaling_info, MODE_INFO_TYPE_SOURCE};
 
     let settings = get_display_settings(true)?;
     let additional_info = get_additional_info_for_modes(&settings.mode_info_array);
@@ -265,6 +293,31 @@ pub fn current_monitors() -> Result<Vec<MonitorDetails>, String> {
             dpi_scale,
         });
     }
+
+    Ok(monitors)
+}
+
+/// Get current monitor configuration from the system (Linux).
+#[cfg(target_os = "linux")]
+pub fn current_monitors() -> Result<Vec<MonitorDetails>, String> {
+    use crate::display::get_display_settings;
+
+    let settings = get_display_settings(true)?;
+
+    let monitors = settings.outputs
+        .iter()
+        .map(|output| MonitorDetails {
+            name: output.name.clone(),
+            width: output.width,
+            height: output.height,
+            refresh_rate: output.refresh_rate as f64,
+            position_x: output.pos_x,
+            position_y: output.pos_y,
+            rotation: output.rotation.to_u32(),
+            is_primary: output.primary,
+            dpi_scale: None,
+        })
+        .collect();
 
     Ok(monitors)
 }
