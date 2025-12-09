@@ -31,7 +31,8 @@
   "bundle": {
     "active": true,
     "targets": [
-      "deb"
+      "deb",
+      "nsis"
     ],
     "resources": {
       "icons/menu/*": "icons/menu/"
