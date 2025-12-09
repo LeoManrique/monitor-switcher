@@ -31,7 +31,7 @@
   "bundle": {
     "active": true,
     "targets": [
-      "nsis"
+      "deb"
     ],
     "resources": {
       "icons/menu/*": "icons/menu/"
@@ -43,6 +43,11 @@
       "icons/icon.icns",
       "icons/icon.ico"
     ],
+    "linux": {
+      "deb": {
+        "depends": []
+      }
+    },
     "windows": {
       "nsis": {
         "installMode": "currentUser"

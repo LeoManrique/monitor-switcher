@@ -16,7 +16,9 @@
       "Bash(where rustc:*)",
       "Bash(rustc:*)",
       "Bash(cargo check:*)",
-      "Bash(npm install:*)"
+      "Bash(pnpm install:*)",
+      "Bash(xrandr:*)",
+      "Bash(echo:*)"
     ],
     "deny": [],
     "ask": []
